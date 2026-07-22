@@ -26,6 +26,7 @@ const typeDefs = /* GraphQL */ `
 
   type Shift {
     id: ID!
+    user: User!
     clockInAt: String!
     clockInLat: Float!
     clockInLng: Float!
@@ -41,17 +42,31 @@ const typeDefs = /* GraphQL */ `
     currentPerimeter: Perimeter
     myActiveShift: Shift
     myShifts: [Shift!]!
+    currentlyClockedIn: [Shift!]!
+    allShifts: [Shift!]!
   }
 
   type Mutation {
     clockIn(lat: Float!, lng: Float!, note: String): Shift!
     clockOut(lat: Float!, lng: Float!, note: String): Shift!
+    setPerimeter(
+      label: String!
+      latitude: Float!
+      longitude: Float!
+      radiusMeters: Int!
+    ): Perimeter!
   }
 `;
 
 function requireUser(ctx: GraphQLContext) {
   if (!ctx.dbUser) throw new Error("Not authenticated");
   return ctx.dbUser;
+}
+
+function requireManager(ctx: GraphQLContext) {
+  const user = requireUser(ctx);
+  if (user.role !== "MANAGER") throw new Error("Manager role required");
+  return user;
 }
 
 function getActivePerimeter() {
@@ -66,6 +81,8 @@ const resolvers = {
     clockInAt: (parent: { clockInAt: Date }) => parent.clockInAt.toISOString(),
     clockOutAt: (parent: { clockOutAt: Date | null }) =>
       parent.clockOutAt ? parent.clockOutAt.toISOString() : null,
+    user: (parent: { user?: unknown; userId: string }) =>
+      parent.user ?? prisma.user.findUniqueOrThrow({ where: { id: parent.userId } }),
   },
 
   Query: {
@@ -86,6 +103,24 @@ const resolvers = {
       return prisma.shift.findMany({
         where: { userId: user.id },
         orderBy: { clockInAt: "desc" },
+      });
+    },
+
+    currentlyClockedIn: (_parent: unknown, _args: unknown, ctx: GraphQLContext) => {
+      requireManager(ctx);
+      return prisma.shift.findMany({
+        where: { clockOutAt: null },
+        include: { user: true },
+        orderBy: { clockInAt: "desc" },
+      });
+    },
+
+    allShifts: (_parent: unknown, _args: unknown, ctx: GraphQLContext) => {
+      requireManager(ctx);
+      return prisma.shift.findMany({
+        include: { user: true },
+        orderBy: { clockInAt: "desc" },
+        take: 200,
       });
     },
   },
@@ -144,6 +179,37 @@ const resolvers = {
           clockOutLng: args.lng,
           clockOutNote: args.note,
         },
+      });
+    },
+
+    setPerimeter: async (
+      _parent: unknown,
+      args: {
+        label: string;
+        latitude: number;
+        longitude: number;
+        radiusMeters: number;
+      },
+      ctx: GraphQLContext,
+    ) => {
+      const manager = requireManager(ctx);
+
+      return prisma.$transaction(async (tx) => {
+        await tx.perimeter.updateMany({
+          where: { isActive: true },
+          data: { isActive: false },
+        });
+
+        return tx.perimeter.create({
+          data: {
+            label: args.label,
+            latitude: args.latitude,
+            longitude: args.longitude,
+            radiusMeters: args.radiusMeters,
+            isActive: true,
+            createdByUserId: manager.id,
+          },
+        });
       });
     },
   },
