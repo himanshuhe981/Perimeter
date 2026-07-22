@@ -1,5 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { defineConfig } from "prisma/config";
+
+// Match Next.js's own precedence: .env first, then .env.local overrides it.
+dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env.local", override: true });
 
 // `migrate`/`db push`/introspection use DIRECT_URL (Neon's non-pooled
 // connection) — the pooled connection can't hold the advisory locks these
