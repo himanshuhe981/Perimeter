@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { Button, Flex, Space } from "antd";
+import Title from "antd/es/typography/Title";
+import Text from "antd/es/typography/Text";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 import { setRole } from "./actions";
 
@@ -8,27 +11,27 @@ export default async function OnboardingPage() {
   if (user.role) redirect("/");
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <h1 className="text-2xl font-semibold">Welcome to Perimeter</h1>
-      <p className="text-zinc-600 dark:text-zinc-400">
+    <Flex
+      vertical
+      align="center"
+      justify="center"
+      gap="middle"
+      style={{ flex: 1, textAlign: "center", padding: 24 }}
+    >
+      <Title level={2}>Welcome to Perimeter</Title>
+      <Text type="secondary">
         Tell us how you&apos;ll be using the app.
-      </p>
-      <form action={setRole} className="flex flex-col gap-3 sm:flex-row">
-        <button
-          name="role"
-          value="MANAGER"
-          className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-black"
-        >
-          I&apos;m a Manager
-        </button>
-        <button
-          name="role"
-          value="CARE_WORKER"
-          className="rounded-full border border-black/20 px-5 py-2.5 text-sm font-medium dark:border-white/20"
-        >
-          I&apos;m a Care Worker
-        </button>
+      </Text>
+      <form action={setRole}>
+        <Space>
+          <Button type="primary" size="large" htmlType="submit" name="role" value="MANAGER">
+            I&apos;m a Manager
+          </Button>
+          <Button size="large" htmlType="submit" name="role" value="CARE_WORKER">
+            I&apos;m a Care Worker
+          </Button>
+        </Space>
       </form>
-    </div>
+    </Flex>
   );
 }

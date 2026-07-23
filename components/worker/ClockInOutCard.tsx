@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Alert, Button, Card, Flex } from "antd";
+import TextArea from "antd/es/input/TextArea";
+import Text from "antd/es/typography/Text";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { graphqlFetch } from "@/lib/graphqlFetch";
 import { isWithinPerimeter } from "@/lib/geo";
@@ -43,6 +46,7 @@ export function ClockInOutCard({
   perimeter: Perimeter;
 }) {
   const router = useRouter();
+  const [isRefreshing, startRefresh] = useTransition();
   const {
     coords,
     error: geoError,
@@ -77,62 +81,84 @@ export function ClockInOutCard({
   }
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-black/10 p-6 dark:border-white/10">
-      {!perimeter && (
-        <p className="text-sm text-amber-600">
-          No perimeter has been configured by a manager yet — clock-in is
-          disabled.
-        </p>
-      )}
-
-      <button
-        type="button"
-        onClick={requestLocation}
-        disabled={geoLoading}
-        className="rounded-full border border-black/20 px-4 py-2 text-sm disabled:opacity-50 dark:border-white/20"
-      >
-        {geoLoading ? "Getting location..." : "Check my location"}
-      </button>
-
-      {geoError && <p className="text-sm text-red-600">{geoError}</p>}
-
-      {coords && perimeter && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {withinPerimeter
-            ? `You're inside the ${perimeter.label} perimeter.`
-            : `You're outside the ${perimeter.label} perimeter — you can't clock in from here.`}
-        </p>
-      )}
-
-      <textarea
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Optional note"
-        rows={2}
-        className="rounded-lg border border-black/10 p-2 text-sm dark:border-white/10 dark:bg-black"
-      />
-
-      {formError && <p className="text-sm text-red-600">{formError}</p>}
-
-      {isClockedIn ? (
-        <button
-          type="button"
-          onClick={() => handleSubmit(CLOCK_OUT_MUTATION)}
-          disabled={!coords || submitting}
-          className="rounded-full bg-black px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+    <Card
+      style={{ width: "100%", maxWidth: 384 }}
+      extra={
+        <Button
+          type="text"
+          size="small"
+          loading={isRefreshing}
+          onClick={() => startRefresh(() => router.refresh())}
         >
-          {submitting ? "Clocking out..." : "Clock out"}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => handleSubmit(CLOCK_IN_MUTATION)}
-          disabled={!coords || !withinPerimeter || submitting}
-          className="rounded-full bg-black px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
-        >
-          {submitting ? "Clocking in..." : "Clock in"}
-        </button>
-      )}
-    </div>
+          Refresh
+        </Button>
+      }
+      title="Status"
+    >
+      <Flex vertical gap="middle">
+        {!perimeter && (
+          <Alert
+            type="warning"
+            showIcon
+            message="No perimeter has been configured by a manager yet — clock-in is disabled."
+          />
+        )}
+
+        <Button loading={geoLoading} onClick={requestLocation}>
+          {geoLoading ? "Getting location..." : "Check my location"}
+        </Button>
+
+        {geoError && <Alert type="error" showIcon message={geoError} />}
+
+        {coords && perimeter && (
+          <Alert
+            type={withinPerimeter ? "success" : "warning"}
+            showIcon
+            message={
+              withinPerimeter
+                ? `You're inside the ${perimeter.label} perimeter.`
+                : `You're outside the ${perimeter.label} perimeter — you can't clock in from here.`
+            }
+          />
+        )}
+
+        <TextArea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Optional note"
+          rows={2}
+        />
+
+        {formError && <Alert type="error" showIcon message={formError} />}
+
+        {isClockedIn ? (
+          <Button
+            type="primary"
+            danger
+            disabled={!coords}
+            loading={submitting}
+            onClick={() => handleSubmit(CLOCK_OUT_MUTATION)}
+          >
+            Clock out
+          </Button>
+        ) : (
+          <Button
+            type="primary"
+            disabled={!coords || !withinPerimeter}
+            loading={submitting}
+            onClick={() => handleSubmit(CLOCK_IN_MUTATION)}
+          >
+            Clock in
+          </Button>
+        )}
+
+        {initialActiveShift && (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Clocked in at{" "}
+            {new Date(initialActiveShift.clockInAt).toLocaleString()}
+          </Text>
+        )}
+      </Flex>
+    </Card>
   );
 }

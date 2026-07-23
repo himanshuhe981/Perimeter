@@ -1,3 +1,7 @@
+"use client";
+
+import { Table } from "antd";
+
 type ClockedInShift = {
   id: string;
   clockInAt: Date;
@@ -7,37 +11,32 @@ type ClockedInShift = {
 };
 
 export function LiveClockedInTable({ shifts }: { shifts: ClockedInShift[] }) {
-  if (shifts.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500">No one is currently clocked in.</p>
-    );
-  }
-
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-black/10 dark:border-white/10">
-            <th className="py-2 pr-4">Staff</th>
-            <th className="py-2 pr-4">Clocked in at</th>
-            <th className="py-2 pr-4">Location</th>
-          </tr>
-        </thead>
-        <tbody>
-          {shifts.map((s) => (
-            <tr
-              key={s.id}
-              className="border-b border-black/5 dark:border-white/5"
-            >
-              <td className="py-2 pr-4">{s.user.name ?? s.user.email}</td>
-              <td className="py-2 pr-4">{s.clockInAt.toLocaleString()}</td>
-              <td className="py-2 pr-4">
-                {s.clockInLat.toFixed(4)}, {s.clockInLng.toFixed(4)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table<ClockedInShift>
+      rowKey="id"
+      dataSource={shifts}
+      pagination={false}
+      scroll={{ x: true }}
+      columns={[
+        {
+          title: "Staff",
+          key: "staff",
+          render: (_, s) => s.user.name ?? s.user.email,
+        },
+        {
+          title: "Clocked in at",
+          dataIndex: "clockInAt",
+          key: "clockInAt",
+          sorter: (a, b) => a.clockInAt.getTime() - b.clockInAt.getTime(),
+          render: (v: Date) => v.toLocaleString(),
+        },
+        {
+          title: "Location",
+          key: "location",
+          render: (_, s) =>
+            `${s.clockInLat.toFixed(4)}, ${s.clockInLng.toFixed(4)}`,
+        },
+      ]}
+    />
   );
 }

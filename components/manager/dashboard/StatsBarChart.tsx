@@ -9,6 +9,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { Card } from "antd";
 import { useIsDarkMode } from "@/hooks/useIsDarkMode";
 import { chartColors } from "@/lib/chartTheme";
 
@@ -71,13 +72,10 @@ export function StatsBarChart({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-black/10 p-6 dark:border-white/10">
-      <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {title}
-      </h3>
+    <Card title={title} size="small">
       <div style={{ height: 240 }}>
         <Bar options={options} data={data} />
       </div>
-    </div>
+    </Card>
   );
 }

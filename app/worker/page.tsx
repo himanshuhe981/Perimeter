@@ -1,3 +1,5 @@
+import { Flex } from "antd";
+import Title from "antd/es/typography/Title";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 import { prisma } from "@/lib/prisma";
 import { ClockInOutCard } from "@/components/worker/ClockInOutCard";
@@ -18,16 +20,25 @@ export default async function WorkerPage() {
   ]);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-12">
-      <h1 className="text-2xl font-semibold">Clock In / Out</h1>
+    <Flex
+      vertical
+      align="center"
+      justify="center"
+      gap="middle"
+      style={{ flex: 1, padding: 24 }}
+    >
+      <Title level={2}>Clock In / Out</Title>
       <ClockInOutCard
         initialActiveShift={
           activeShift
-            ? { id: activeShift.id, clockInAt: activeShift.clockInAt.toISOString() }
+            ? {
+                id: activeShift.id,
+                clockInAt: activeShift.clockInAt.toISOString(),
+              }
             : null
         }
         perimeter={perimeter}
       />
-    </div>
+    </Flex>
   );
 }

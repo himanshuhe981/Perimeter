@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { Button, Flex, Space } from "antd";
+import Title from "antd/es/typography/Title";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 
 export default async function Home() {
@@ -6,17 +8,23 @@ export default async function Home() {
 
   if (!user) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">Perimeter</h1>
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          <a href="/auth/login" className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-black">
+      <Flex
+        vertical
+        align="center"
+        justify="center"
+        gap="middle"
+        style={{ flex: 1, textAlign: "center", padding: 24 }}
+      >
+        <Title level={1}>Perimeter</Title>
+        <Space>
+          <Button type="primary" size="large" href="/auth/login">
             Log in
-          </a>
-          <a href="/auth/login?screen_hint=signup" className="rounded-full border border-black/20 px-5 py-2.5 text-sm font-medium dark:border-white/20">
+          </Button>
+          <Button size="large" href="/auth/login?screen_hint=signup">
             Sign up
-          </a>
-        </div>
-      </div>
+          </Button>
+        </Space>
+      </Flex>
     );
   }
 

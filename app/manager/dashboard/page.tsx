@@ -1,3 +1,5 @@
+import { Button, Flex } from "antd";
+import Title from "antd/es/typography/Title";
 import { getDashboardStats } from "@/lib/dashboardStats";
 import { StatsBarChart } from "@/components/manager/dashboard/StatsBarChart";
 
@@ -16,13 +18,17 @@ export default async function ManagerDashboardPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-12">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <a href="/manager" className="text-sm underline">
-          Back to manager view
-        </a>
-      </div>
+    <Flex
+      vertical
+      gap="large"
+      style={{ maxWidth: 960, margin: "0 auto", padding: 24, width: "100%" }}
+    >
+      <Flex align="center" justify="space-between">
+        <Title level={2} style={{ margin: 0 }}>
+          Dashboard
+        </Title>
+        <Button href="/manager">Back to manager view</Button>
+      </Flex>
 
       <StatsBarChart
         title="Average hours clocked in per day (last 7 days)"
@@ -44,6 +50,6 @@ export default async function ManagerDashboardPage() {
         valueSuffix="h"
         indexAxis="y"
       />
-    </div>
+    </Flex>
   );
 }

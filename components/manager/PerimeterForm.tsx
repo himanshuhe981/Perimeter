@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Alert, Button, Card, Form, Input, InputNumber } from "antd";
+import FormItem from "antd/es/form/FormItem";
+import Paragraph from "antd/es/typography/Paragraph";
 import { graphqlFetch } from "@/lib/graphqlFetch";
 
 type Perimeter = {
@@ -30,35 +33,31 @@ const SET_PERIMETER_MUTATION = /* GraphQL */ `
   }
 `;
 
+type FormValues = {
+  label: string;
+  latitude: number;
+  longitude: number;
+  radiusKm: number;
+};
+
 export function PerimeterForm({
   currentPerimeter,
 }: {
   currentPerimeter: Perimeter;
 }) {
   const router = useRouter();
-  const [label, setLabel] = useState(currentPerimeter?.label ?? "");
-  const [latitude, setLatitude] = useState(
-    currentPerimeter?.latitude.toString() ?? "",
-  );
-  const [longitude, setLongitude] = useState(
-    currentPerimeter?.longitude.toString() ?? "",
-  );
-  const [radiusKm, setRadiusKm] = useState(
-    currentPerimeter ? (currentPerimeter.radiusMeters / 1000).toString() : "",
-  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function handleFinish(values: FormValues) {
     setSubmitting(true);
     setError(null);
     try {
       await graphqlFetch(SET_PERIMETER_MUTATION, {
-        label,
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radiusMeters: Math.round(parseFloat(radiusKm) * 1000),
+        label: values.label,
+        latitude: values.latitude,
+        longitude: values.longitude,
+        radiusMeters: Math.round(values.radiusKm * 1000),
       });
       router.refresh();
     } catch (e) {
@@ -69,73 +68,59 @@ export function PerimeterForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-2xl border border-black/10 p-6 dark:border-white/10"
-    >
+    <Card title="Perimeter">
       {currentPerimeter && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <Paragraph type="secondary">
           Current: {currentPerimeter.label} —{" "}
           {(currentPerimeter.radiusMeters / 1000).toFixed(1)}km radius
-        </p>
+        </Paragraph>
       )}
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          Label
-          <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            required
-            className="rounded-lg border border-black/10 p-2 dark:border-white/10 dark:bg-black"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Radius (km)
-          <input
-            type="number"
-            step="0.1"
-            min="0.1"
-            value={radiusKm}
-            onChange={(e) => setRadiusKm(e.target.value)}
-            required
-            className="rounded-lg border border-black/10 p-2 dark:border-white/10 dark:bg-black"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Latitude
-          <input
-            type="number"
-            step="any"
-            value={latitude}
-            onChange={(e) => setLatitude(e.target.value)}
-            required
-            className="rounded-lg border border-black/10 p-2 dark:border-white/10 dark:bg-black"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Longitude
-          <input
-            type="number"
-            step="any"
-            value={longitude}
-            onChange={(e) => setLongitude(e.target.value)}
-            required
-            className="rounded-lg border border-black/10 p-2 dark:border-white/10 dark:bg-black"
-          />
-        </label>
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="self-start rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+      <Form<FormValues>
+        layout="vertical"
+        onFinish={handleFinish}
+        initialValues={{
+          label: currentPerimeter?.label,
+          latitude: currentPerimeter?.latitude,
+          longitude: currentPerimeter?.longitude,
+          radiusKm: currentPerimeter
+            ? currentPerimeter.radiusMeters / 1000
+            : undefined,
+        }}
       >
-        {submitting
-          ? "Saving..."
-          : currentPerimeter
-            ? "Update perimeter"
-            : "Set perimeter"}
-      </button>
-    </form>
+        <FormItem name="label" label="Label" rules={[{ required: true }]}>
+          <Input />
+        </FormItem>
+        <FormItem
+          name="radiusKm"
+          label="Radius (km)"
+          rules={[{ required: true }]}
+        >
+          <InputNumber min={0.1} step={0.1} style={{ width: "100%" }} />
+        </FormItem>
+        <FormItem name="latitude" label="Latitude" rules={[{ required: true }]}>
+          <InputNumber step={0.0001} style={{ width: "100%" }} />
+        </FormItem>
+        <FormItem
+          name="longitude"
+          label="Longitude"
+          rules={[{ required: true }]}
+        >
+          <InputNumber step={0.0001} style={{ width: "100%" }} />
+        </FormItem>
+        {error && (
+          <Alert
+            type="error"
+            showIcon
+            message={error}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        <FormItem style={{ marginBottom: 0 }}>
+          <Button type="primary" htmlType="submit" loading={submitting}>
+            {currentPerimeter ? "Update perimeter" : "Set perimeter"}
+          </Button>
+        </FormItem>
+      </Form>
+    </Card>
   );
 }

@@ -1,3 +1,5 @@
+import { Button, Card, Flex } from "antd";
+import Title from "antd/es/typography/Title";
 import { prisma } from "@/lib/prisma";
 import { PerimeterForm } from "@/components/manager/PerimeterForm";
 import { LiveClockedInTable } from "@/components/manager/LiveClockedInTable";
@@ -22,30 +24,27 @@ export default async function ManagerPage() {
   ]);
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-12">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Manager Dashboard</h1>
-        <a href="/manager/dashboard" className="text-sm underline">
-          View analytics dashboard
-        </a>
-      </div>
+    <Flex
+      vertical
+      gap="large"
+      style={{ maxWidth: 960, margin: "0 auto", padding: 24, width: "100%" }}
+    >
+      <Flex align="center" justify="space-between">
+        <Title level={2} style={{ margin: 0 }}>
+          Manager Dashboard
+        </Title>
+        <Button href="/manager/dashboard">View analytics dashboard</Button>
+      </Flex>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium">Perimeter</h2>
-        <PerimeterForm currentPerimeter={perimeter} />
-      </section>
+      <PerimeterForm currentPerimeter={perimeter} />
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium">
-          Currently clocked in ({clockedIn.length})
-        </h2>
+      <Card title={`Currently clocked in (${clockedIn.length})`}>
         <LiveClockedInTable shifts={clockedIn} />
-      </section>
+      </Card>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium">Staff shift history</h2>
+      <Card title="Staff shift history">
         <StaffHistoryTable shifts={allShifts} />
-      </section>
-    </div>
+      </Card>
+    </Flex>
   );
 }
