@@ -1,7 +1,14 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import { GraphQLError } from "graphql";
 import { prisma } from "@/lib/prisma";
 import { isWithinPerimeter } from "@/lib/geo";
+import { getDashboardStats } from "@/lib/dashboardStats";
 import type { GraphQLContext } from "./context";
+
+// graphql-yoga masks any thrown error that isn't a real GraphQLError instance
+// down to a generic "Unexpected error." for clients (still logging the real
+// one server-side) — so every user-facing validation message here must be
+// thrown as GraphQLError, not a plain Error, or the client never sees it.
 
 const typeDefs = /* GraphQL */ `
   enum Role {
@@ -37,6 +44,24 @@ const typeDefs = /* GraphQL */ `
     clockOutNote: String
   }
 
+  type DailyStat {
+    date: String!
+    avgHours: Float!
+    clockInCount: Int!
+  }
+
+  type StaffTotal {
+    userId: ID!
+    name: String
+    email: String!
+    totalHours: Float!
+  }
+
+  type DashboardStats {
+    dailyStats: [DailyStat!]!
+    staffTotals: [StaffTotal!]!
+  }
+
   type Query {
     me: User
     currentPerimeter: Perimeter
@@ -44,6 +69,7 @@ const typeDefs = /* GraphQL */ `
     myShifts: [Shift!]!
     currentlyClockedIn: [Shift!]!
     allShifts: [Shift!]!
+    dashboardStats(rangeDays: Int): DashboardStats!
   }
 
   type Mutation {
@@ -59,13 +85,13 @@ const typeDefs = /* GraphQL */ `
 `;
 
 function requireUser(ctx: GraphQLContext) {
-  if (!ctx.dbUser) throw new Error("Not authenticated");
+  if (!ctx.dbUser) throw new GraphQLError("Not authenticated");
   return ctx.dbUser;
 }
 
 function requireManager(ctx: GraphQLContext) {
   const user = requireUser(ctx);
-  if (user.role !== "MANAGER") throw new Error("Manager role required");
+  if (user.role !== "MANAGER") throw new GraphQLError("Manager role required");
   return user;
 }
 
@@ -123,6 +149,15 @@ const resolvers = {
         take: 200,
       });
     },
+
+    dashboardStats: (
+      _parent: unknown,
+      args: { rangeDays?: number },
+      ctx: GraphQLContext,
+    ) => {
+      requireManager(ctx);
+      return getDashboardStats(args.rangeDays ?? 7);
+    },
   },
 
   Mutation: {
@@ -136,15 +171,15 @@ const resolvers = {
       const existing = await prisma.shift.findFirst({
         where: { userId: user.id, clockOutAt: null },
       });
-      if (existing) throw new Error("You are already clocked in.");
+      if (existing) throw new GraphQLError("You are already clocked in.");
 
       const perimeter = await getActivePerimeter();
       if (!perimeter) {
-        throw new Error("No perimeter has been configured yet.");
+        throw new GraphQLError("No perimeter has been configured yet.");
       }
 
       if (!isWithinPerimeter({ lat: args.lat, lng: args.lng }, perimeter)) {
-        throw new Error(
+        throw new GraphQLError(
           `You are outside the ${perimeter.label} perimeter and cannot clock in.`,
         );
       }
@@ -169,7 +204,7 @@ const resolvers = {
       const active = await prisma.shift.findFirst({
         where: { userId: user.id, clockOutAt: null },
       });
-      if (!active) throw new Error("You are not currently clocked in.");
+      if (!active) throw new GraphQLError("You are not currently clocked in.");
 
       return prisma.shift.update({
         where: { id: active.id },
