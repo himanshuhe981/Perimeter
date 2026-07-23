@@ -13,13 +13,19 @@ export type StaffTotal = {
   totalHours: number;
 };
 
-export async function getDashboardStats(rangeDays: number = 7) {
+export async function getDashboardStats(
+  rangeDays: number = 7,
+  staffId?: string | null,
+) {
   const startOfRange = new Date();
   startOfRange.setUTCHours(0, 0, 0, 0);
   startOfRange.setUTCDate(startOfRange.getUTCDate() - (rangeDays - 1));
 
   const shifts = await prisma.shift.findMany({
-    where: { clockInAt: { gte: startOfRange } },
+    where: {
+      clockInAt: { gte: startOfRange },
+      ...(staffId ? { userId: staffId } : {}),
+    },
     include: { user: true },
   });
 
@@ -87,4 +93,12 @@ export async function getDashboardStats(rangeDays: number = 7) {
   );
 
   return { dailyStats, staffTotals: staffTotalsArr };
+}
+
+export async function getAllStaff() {
+  return prisma.user.findMany({
+    where: { role: "CARE_WORKER" },
+    select: { id: true, name: true, email: true },
+    orderBy: { email: "asc" },
+  });
 }

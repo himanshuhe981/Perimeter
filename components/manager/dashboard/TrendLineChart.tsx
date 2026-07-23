@@ -4,37 +4,44 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
+  Filler,
   Tooltip,
   type ChartOptions,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import { Card } from "antd";
 import { useTheme } from "@/components/shared/AntdThemeProvider";
 import { chartColors } from "@/lib/chartTheme";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+);
 
-export function StatsBarChart({
+export function TrendLineChart({
   title,
   labels,
   values,
   valueSuffix = "",
-  indexAxis = "x",
 }: {
   title: string;
   labels: string[];
   values: number[];
   valueSuffix?: string;
-  indexAxis?: "x" | "y";
 }) {
   const { theme } = useTheme();
   const colors = theme === "dark" ? chartColors.dark : chartColors.light;
 
-  const options: ChartOptions<"bar"> = {
-    indexAxis,
+  const options: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -45,14 +52,14 @@ export function StatsBarChart({
     },
     scales: {
       x: {
-        grid: { color: colors.grid, display: indexAxis === "y" },
+        grid: { display: false },
         ticks: { color: colors.text },
         border: { color: colors.axis },
       },
       y: {
-        grid: { color: colors.grid, display: indexAxis === "x" },
+        grid: { color: colors.grid },
         ticks: { color: colors.text },
-        border: { color: colors.axis },
+        border: { display: false },
         beginAtZero: true,
       },
     },
@@ -63,10 +70,16 @@ export function StatsBarChart({
     datasets: [
       {
         data: values,
-        backgroundColor: colors.bar,
-        borderRadius: 4,
-        borderSkipped: false,
-        maxBarThickness: 24,
+        borderColor: colors.bar,
+        backgroundColor: colors.bar + "1a",
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: colors.bar,
+        pointHoverBorderColor: colors.surface,
+        pointHoverBorderWidth: 2,
       },
     ],
   };
@@ -74,7 +87,7 @@ export function StatsBarChart({
   return (
     <Card title={title} size="small">
       <div style={{ height: 240 }}>
-        <Bar options={options} data={data} />
+        <Line options={options} data={data} />
       </div>
     </Card>
   );

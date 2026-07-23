@@ -69,7 +69,7 @@ const typeDefs = /* GraphQL */ `
     myShifts: [Shift!]!
     currentlyClockedIn: [Shift!]!
     allShifts: [Shift!]!
-    dashboardStats(rangeDays: Int): DashboardStats!
+    dashboardStats(rangeDays: Int, staffId: ID): DashboardStats!
   }
 
   type Mutation {
@@ -152,11 +152,11 @@ const resolvers = {
 
     dashboardStats: (
       _parent: unknown,
-      args: { rangeDays?: number },
+      args: { rangeDays?: number; staffId?: string },
       ctx: GraphQLContext,
     ) => {
       requireManager(ctx);
-      return getDashboardStats(args.rangeDays ?? 7);
+      return getDashboardStats(args.rangeDays ?? 7, args.staffId);
     },
   },
 
