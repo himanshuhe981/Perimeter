@@ -23,7 +23,12 @@ export default async function ManagerPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-12">
-      <h1 className="text-2xl font-semibold">Manager Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Manager Dashboard</h1>
+        <a href="/manager/dashboard" className="text-sm underline">
+          View analytics dashboard
+        </a>
+      </div>
 
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-medium">Perimeter</h2>

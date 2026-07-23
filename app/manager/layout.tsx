@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/getCurrentUser";
+import { AppHeader } from "@/components/shared/AppHeader";
 
 export default async function ManagerLayout({
   children,
@@ -11,5 +12,10 @@ export default async function ManagerLayout({
   if (!user.role) redirect("/onboarding");
   if (user.role !== "MANAGER") redirect("/worker");
 
-  return <>{children}</>;
+  return (
+    <div className="flex flex-1 flex-col">
+      <AppHeader user={user} />
+      {children}
+    </div>
+  );
 }
