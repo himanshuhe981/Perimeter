@@ -1,6 +1,7 @@
 "use client";
 
 import { Table } from "antd";
+import { formatDateTime } from "@/lib/formatDate";
 
 type ClockedInShift = {
   id: string;
@@ -10,13 +11,20 @@ type ClockedInShift = {
   user: { name: string | null; email: string };
 };
 
-export function LiveClockedInTable({ shifts }: { shifts: ClockedInShift[] }) {
+export function LiveClockedInTable({
+  shifts,
+  compact = false,
+}: {
+  shifts: ClockedInShift[];
+  compact?: boolean;
+}) {
   return (
     <Table<ClockedInShift>
       rowKey="id"
       dataSource={shifts}
       pagination={false}
       scroll={{ x: true }}
+      size={compact ? "small" : "middle"}
       columns={[
         {
           title: "Staff",
@@ -28,14 +36,30 @@ export function LiveClockedInTable({ shifts }: { shifts: ClockedInShift[] }) {
           dataIndex: "clockInAt",
           key: "clockInAt",
           sorter: (a, b) => a.clockInAt.getTime() - b.clockInAt.getTime(),
-          render: (v: Date) => v.toLocaleString(),
+          render: (v: Date) => formatDateTime(v),
         },
         {
-          title: "Location",
-          key: "location",
-          render: (_, s) =>
-            `${s.clockInLat.toFixed(4)}, ${s.clockInLng.toFixed(4)}`,
+          title: "Status",
+          key: "status",
+          render: () => (
+            <span
+              className="pm-pill"
+              style={{ background: "var(--green-soft)", color: "var(--green)" }}
+            >
+              Active
+            </span>
+          ),
         },
+        ...(compact
+          ? []
+          : [
+              {
+                title: "Location",
+                key: "location",
+                render: (_: unknown, s: ClockedInShift) =>
+                  `${s.clockInLat.toFixed(4)}, ${s.clockInLng.toFixed(4)}`,
+              },
+            ]),
       ]}
     />
   );

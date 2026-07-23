@@ -68,13 +68,12 @@ export function PerimeterForm({
   }
 
   return (
-    <Card title="Perimeter">
-      {currentPerimeter && (
-        <Paragraph type="secondary">
-          Current: {currentPerimeter.label} —{" "}
-          {(currentPerimeter.radiusMeters / 1000).toFixed(1)}km radius
-        </Paragraph>
-      )}
+    <Card title="Location perimeter" className="pm-card" style={{ border: "none" }}>
+      <Paragraph type="secondary" style={{ marginTop: -8 }}>
+        {currentPerimeter
+          ? `Staff can only clock in within ${(currentPerimeter.radiusMeters / 1000).toFixed(1)}km of "${currentPerimeter.label}."`
+          : "Set the area your care team must be inside to clock in."}
+      </Paragraph>
       <Form<FormValues>
         layout="vertical"
         onFinish={handleFinish}
@@ -111,7 +110,7 @@ export function PerimeterForm({
           <Alert
             type="error"
             showIcon
-            message={error}
+            title={error}
             style={{ marginBottom: 16 }}
           />
         )}

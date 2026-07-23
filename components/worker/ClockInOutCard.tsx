@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, Button, Card, Flex } from "antd";
 import TextArea from "antd/es/input/TextArea";
@@ -8,6 +8,9 @@ import Text from "antd/es/typography/Text";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { graphqlFetch } from "@/lib/graphqlFetch";
 import { isWithinPerimeter } from "@/lib/geo";
+import { formatDateTime } from "@/lib/formatDate";
+import { IconButton } from "@/components/shared/IconButton";
+import { RefreshIcon, LocationIcon, ClockIcon } from "@/components/shared/icons";
 
 type Perimeter = {
   id: string;
@@ -38,6 +41,29 @@ const CLOCK_OUT_MUTATION = /* GraphQL */ `
   }
 `;
 
+function useElapsed(since: string | null) {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    if (!since) {
+      setLabel("");
+      return;
+    }
+    const start = new Date(since).getTime();
+    function tick() {
+      const mins = Math.max(0, Math.floor((Date.now() - start) / 60000));
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      setLabel(h > 0 ? `${h}h ${m}m` : `${m}m`);
+    }
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
+  }, [since]);
+
+  return label;
+}
+
 export function ClockInOutCard({
   initialActiveShift,
   perimeter,
@@ -57,6 +83,7 @@ export function ClockInOutCard({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const isClockedIn = Boolean(initialActiveShift);
+  const elapsed = useElapsed(initialActiveShift?.clockInAt ?? null);
 
   const withinPerimeter =
     coords && perimeter ? isWithinPerimeter(coords, perimeter) : null;
@@ -82,39 +109,70 @@ export function ClockInOutCard({
 
   return (
     <Card
-      style={{ width: "100%", maxWidth: 384 }}
-      extra={
-        <Button
-          type="text"
-          size="small"
-          loading={isRefreshing}
-          onClick={() => startRefresh(() => router.refresh())}
-        >
-          Refresh
-        </Button>
-      }
-      title="Status"
+      style={{ width: "100%" }}
+      styles={{ body: { padding: 0 } }}
     >
-      <Flex vertical gap="middle">
+      <div
+        className={isClockedIn ? "pm-gradient-lime" : undefined}
+        style={{
+          padding: "22px 24px",
+          borderRadius: "18px 18px 0 0",
+          background: isClockedIn ? undefined : "var(--surface-2)",
+        }}
+      >
+        <Flex align="center" justify="space-between">
+          <Flex align="center" gap={10}>
+            <div>
+              <Text
+                strong
+                style={{
+                  fontSize: 16,
+                  color: isClockedIn ? "inherit" : "var(--foreground)",
+                }}
+              >
+                {isClockedIn ? "Clocked in" : "Not clocked in"}
+              </Text>
+              {isClockedIn && (
+                <div style={{ fontSize: 12, opacity: 0.85 }}>
+                  {elapsed ? `${elapsed} ago` : "Just now"} · since{" "}
+                  {formatDateTime(new Date(initialActiveShift!.clockInAt))}
+                </div>
+              )}
+            </div>
+          </Flex>
+          <IconButton
+            label="Refresh"
+            onClick={() => startRefresh(() => router.refresh())}
+          >
+            <RefreshIcon spin={isRefreshing} />
+          </IconButton>
+        </Flex>
+      </div>
+
+      <Flex vertical gap={16} style={{ padding: 24 }}>
         {!perimeter && (
           <Alert
             type="warning"
             showIcon
-            message="No perimeter has been configured by a manager yet — clock-in is disabled."
+            title="No perimeter has been configured by a manager yet — clock-in is disabled."
           />
         )}
 
-        <Button loading={geoLoading} onClick={requestLocation}>
+        <Button
+          icon={<LocationIcon size={16} />}
+          loading={geoLoading}
+          onClick={requestLocation}
+        >
           {geoLoading ? "Getting location..." : "Check my location"}
         </Button>
 
-        {geoError && <Alert type="error" showIcon message={geoError} />}
+        {geoError && <Alert type="error" showIcon title={geoError} />}
 
         {coords && perimeter && (
           <Alert
             type={withinPerimeter ? "success" : "warning"}
             showIcon
-            message={
+            title={
               withinPerimeter
                 ? `You're inside the ${perimeter.label} perimeter.`
                 : `You're outside the ${perimeter.label} perimeter — you can't clock in from here.`
@@ -129,12 +187,13 @@ export function ClockInOutCard({
           rows={2}
         />
 
-        {formError && <Alert type="error" showIcon message={formError} />}
+        {formError && <Alert type="error" showIcon title={formError} />}
 
         {isClockedIn ? (
           <Button
             type="primary"
             danger
+            size="large"
             disabled={!coords}
             loading={submitting}
             onClick={() => handleSubmit(CLOCK_OUT_MUTATION)}
@@ -144,19 +203,13 @@ export function ClockInOutCard({
         ) : (
           <Button
             type="primary"
+            size="large"
             disabled={!coords || !withinPerimeter}
             loading={submitting}
             onClick={() => handleSubmit(CLOCK_IN_MUTATION)}
           >
             Clock in
           </Button>
-        )}
-
-        {initialActiveShift && (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Clocked in at{" "}
-            {new Date(initialActiveShift.clockInAt).toLocaleString()}
-          </Text>
         )}
       </Flex>
     </Card>

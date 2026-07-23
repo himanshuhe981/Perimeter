@@ -6,14 +6,9 @@ import { formatDateTime } from "@/lib/formatDate";
 
 type Shift = {
   id: string;
-  user: { name: string | null; email: string };
   clockInAt: Date;
-  clockInLat: number;
-  clockInLng: number;
   clockInNote: string | null;
   clockOutAt: Date | null;
-  clockOutLat: number | null;
-  clockOutLng: number | null;
   clockOutNote: string | null;
 };
 
@@ -32,19 +27,15 @@ function StatusPill({ done }: { done: boolean }) {
   );
 }
 
-export function StaffHistoryTable({ shifts }: { shifts: Shift[] }) {
+export function MyHistoryTable({ shifts }: { shifts: Shift[] }) {
   return (
     <Table<Shift>
       rowKey="id"
       dataSource={shifts}
       scroll={{ x: true }}
-      pagination={{ pageSize: 10 }}
+      pagination={{ pageSize: 8 }}
+      size="small"
       columns={[
-        {
-          title: "Staff",
-          key: "staff",
-          render: (_, s) => s.user.name ?? s.user.email,
-        },
         {
           title: "Status",
           key: "status",
@@ -56,31 +47,13 @@ export function StaffHistoryTable({ shifts }: { shifts: Shift[] }) {
           key: "clockInAt",
           sorter: (a, b) => a.clockInAt.getTime() - b.clockInAt.getTime(),
           defaultSortOrder: "descend",
-          render: (_, s) => (
-            <>
-              {formatDateTime(s.clockInAt)}
-              <br />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {s.clockInLat.toFixed(4)}, {s.clockInLng.toFixed(4)}
-              </Text>
-            </>
-          ),
+          render: (v: Date) => formatDateTime(v),
         },
         {
           title: "Clock out",
           key: "clockOut",
           render: (_, s) =>
-            s.clockOutAt ? (
-              <>
-                {formatDateTime(s.clockOutAt)}
-                <br />
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {s.clockOutLat?.toFixed(4)}, {s.clockOutLng?.toFixed(4)}
-                </Text>
-              </>
-            ) : (
-              <Text type="secondary">—</Text>
-            ),
+            s.clockOutAt ? formatDateTime(s.clockOutAt) : <Text type="secondary">—</Text>,
         },
         {
           title: "Notes",
